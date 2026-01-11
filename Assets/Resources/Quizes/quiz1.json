@@ -1,0 +1,167 @@
+{
+  "quizName": "Повітряна тривога вдома",
+  "questions": [
+    {
+      "questionText": "Які твої дії після сигналу тривоги?",
+      "type": 0,
+      "options": [
+        {
+          "answerText": "Продовжити грати або сидіти в чаті",
+          "feedbackText": "Помилкові дії. Ігнорування загрози забирає час, необхідний для порятунку.",
+          "isCorrect": false
+        },
+        {
+          "answerText": "Підійти до вікна",
+          "feedbackText": "Небезпечно. Вибухова хвиля вибиває скло першим.",
+          "isCorrect": false
+        },
+        {
+          "answerText": "Вимкнути світло, взяти рюкзак і йти в укриття",
+          "feedbackText": "Правильно! Ти мінімізував ризики і дієш професійно.",
+          "isCorrect": true
+        }
+      ]
+    },
+    {
+      "questionText": "Лунає сирена, а друг у грі вмовляє не виходити. Твої дії?",
+      "type": 0,
+      "options": [
+        {
+          "answerText": "Написати: «У мене тривога, я офлайн» і одразу вийти",
+          "feedbackText": "Ідеальний вибір. Ти подбав про себе і нагадав іншим про небезпеку.",
+          "isCorrect": true
+        },
+        {
+          "answerText": "Мовчки вийти з гри",
+          "feedbackText": "Допустимо, але краще чітко пояснювати причину.",
+          "isCorrect": false
+        },
+        {
+          "answerText": "Залишитися ще на 2 хвилини",
+          "feedbackText": "Помилка. Час втрачено, а ризик зростає.",
+          "isCorrect": false
+        }
+      ]
+    },
+    {
+      "questionText": "Збери тривожний рюкзак. Перетягни необхідні речі в центр.",
+      "type": 1,
+      "dragItems": [
+        {
+          "content": "blood_drop",
+          "shouldBeInZone": true,
+          "mistakeFeedback": ""
+        },
+        {
+          "content": "flashlight",
+          "shouldBeInZone": true,
+          "mistakeFeedback": ""
+        },
+        {
+          "content": "document",
+          "shouldBeInZone": true,
+          "mistakeFeedback": ""
+        },
+        {
+          "content": "battery",
+          "shouldBeInZone": true,
+          "mistakeFeedback": ""
+        },
+        {
+          "content": "pill",
+          "shouldBeInZone": true,
+          "mistakeFeedback": ""
+        },
+        {
+          "content": "teddy_bear",
+          "shouldBeInZone": true,
+          "mistakeFeedback": ""
+        },
+        {
+          "content": "chocolate",
+          "shouldBeInZone": true,
+          "mistakeFeedback": ""
+        },
+        {
+          "content": "gamepad",
+          "shouldBeInZone": false,
+          "mistakeFeedback": "Це зайва вага. Енергія знадобиться для телефону."
+        },
+        {
+          "content": "books",
+          "shouldBeInZone": false,
+          "mistakeFeedback": "Зайва вага. Підручники краще читати в безпечний час."
+        },
+        {
+          "content": "champagne",
+          "shouldBeInZone": false,
+          "mistakeFeedback": "Скляна тара небезпечна, може розбитися в рюкзаку."
+        }
+      ]
+    },
+    {
+      "questionText": "Де в квартирі найкраще укриття?",
+      "type": 0,
+      "options": [
+        {
+          "answerText": "Кімната біля вікна або балкон",
+          "feedbackText": "Небезпечно. Вікна не захищають від уламків.",
+          "isCorrect": false
+        },
+        {
+          "answerText": "Балкон",
+          "feedbackText": "Небезпечно. Максимальний ризик від вибухової хвилі.",
+          "isCorrect": false
+        },
+        {
+          "answerText": "Коридор, ванна або підвал",
+          "feedbackText": "Правильно. Працює правило двох стін.",
+          "isCorrect": true
+        }
+      ]
+    },
+    {
+      "questionText": "Де безпечніше перебувати під час загрози уламків скла?",
+      "type": 0,
+      "options": [
+        {
+          "answerText": "Біля вікна",
+          "feedbackText": "Небезпечно. Осколки можуть летіти на велику відстань.",
+          "isCorrect": false
+        },
+        {
+          "answerText": "Біля бетонної стіни",
+          "feedbackText": "Правильно. Бетон забезпечує високий рівень захисту.",
+          "isCorrect": true
+        },
+        {
+          "answerText": "Біля гіпсокартону",
+          "feedbackText": "Захист мінімальний.",
+          "isCorrect": false
+        }
+      ]
+    },
+    {
+      "questionText": "Обери найбезпечніше місце на схемі квартири.",
+      "type": 2,
+      "options": [],
+      "dragItems": []
+    },
+    {
+      "questionText": "Ти в укритті. Що робити далі?",
+      "type": 0,
+      "options": [
+        {
+          "answerText": "Вибігти на вулицю перевірити обстановку",
+          "feedbackText": "Ризик невиправданий. Залишайся в укритті.",
+          "isCorrect": false
+        },
+        {
+          "answerText": "Написати батькам: «Я в коридорі, все ок»",
+          "feedbackText": "Правильно. Спокійна і чітка комунікація — це безпека.",
+          "isCorrect": true
+        }
+      ]
+    }
+  ]
+}
