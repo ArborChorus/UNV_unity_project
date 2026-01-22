@@ -42,7 +42,7 @@ public class HiddenObjectMinigame : MonoBehaviour
     void Start()
     {
         if (gameplayController == null)
-            gameplayController = FindObjectOfType<QuizGameplayController>();
+            gameplayController = FindFirstObjectByType<QuizGameplayController>();
 
         if (submitButton != null)
             submitButton.onClick.AddListener(CheckAnswer);

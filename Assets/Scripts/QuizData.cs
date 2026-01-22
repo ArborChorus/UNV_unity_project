@@ -12,7 +12,7 @@ public enum QuestionType
 [Serializable]
 public class DragItemData
 {
-    public string content;        // Filename in Resources/Items
+    public string content;
     public bool shouldBeInZone;
     public string mistakeFeedback;
 }
@@ -20,8 +20,8 @@ public class DragItemData
 [Serializable]
 public class AnswerOption
 {
-    public string answerText;   // For Standard Buttons
-    public string feedbackText; // Popup Text
+    public string answerText;
+    public string feedbackText;
     public bool isCorrect;
 }
 
@@ -31,10 +31,11 @@ public class Question
     public string questionText;
     public QuestionType type;
 
-    // For Standard Questions
-    public AnswerOption[] options;
+    // --- NEW: HINT FIELD ---
+    public string hintText;
+    // -----------------------
 
-    // For Drag and Drop Questions
+    public AnswerOption[] options;
     public DragItemData[] dragItems;
 }
 

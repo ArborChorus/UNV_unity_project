@@ -6,43 +6,59 @@ using System.Collections.Generic;
 public class QuizMenuController : MonoBehaviour
 {
     [Header("Configuration")]
-    [Tooltip("Drag your .json files here (Quiz1, Quiz2, Quiz3)")]
     public TextAsset[] quizFiles;
 
     [Header("UI References")]
-    public GameObject menuPanel;
-    public Button[] quizButtons; // Drag your 3 buttons here
+    public GameObject quizSelectionPanel;
+    public Button[] quizButtons;
 
-    [Header("Connection to Game")]
+    [Header("The Universal Button")]
+    public UniversalButton universalButton;
+
+    [Header("External Connections")]
+    public MainMenuController mainMenu;
     public QuizGameplayController gameController;
 
     private List<QuizData> loadedQuizzes = new List<QuizData>();
+    private bool isLoaded = false;
 
-    void Start()
+    // Start is empty because MainMenu handles the initial show/hide
+    void Start() { }
+
+    public void Show()
     {
-        // 1. Load and Parse all JSON files
-        LoadQuizzes();
+        quizSelectionPanel.SetActive(true);
 
-        // 2. Setup Buttons
-        SetupButtons();
+        // --- CONFIGURE UNIVERSAL BUTTON ---
+        // On Level Select, this button goes back to Main Menu
+        if (universalButton != null)
+        {
+            universalButton.Configure("ÍÀÇÀÄ", GoBack); // "BACK"
+        }
 
-        // 3. Ensure Menu is visible at start
-        ShowMenu();
+        // Load data if needed
+        if (!isLoaded)
+        {
+            LoadQuizzes();
+            SetupButtons();
+            isLoaded = true;
+        }
     }
 
-    public void ShowMenu()
+    public void Hide()
     {
-        menuPanel.SetActive(true);
+        quizSelectionPanel.SetActive(false);
+    }
 
-        // Hide game panel just in case
-        if (gameController != null)
-            gameController.gameObject.SetActive(false);
+    void GoBack()
+    {
+        Hide();
+        mainMenu.Show();
     }
 
     void LoadQuizzes()
     {
         loadedQuizzes.Clear();
-
         foreach (TextAsset file in quizFiles)
         {
             if (file != null)
@@ -52,10 +68,7 @@ public class QuizMenuController : MonoBehaviour
                     QuizData data = JsonUtility.FromJson<QuizData>(file.text);
                     if (data != null) loadedQuizzes.Add(data);
                 }
-                catch (System.Exception e)
-                {
-                    Debug.LogError($"Error parsing {file.name}: {e.Message}");
-                }
+                catch (System.Exception e) { Debug.LogError(e.Message); }
             }
         }
     }
@@ -67,30 +80,23 @@ public class QuizMenuController : MonoBehaviour
             if (i < loadedQuizzes.Count)
             {
                 quizButtons[i].gameObject.SetActive(true);
-
-                // Set Button Text
                 TextMeshProUGUI btnText = quizButtons[i].GetComponentInChildren<TextMeshProUGUI>();
                 if (btnText != null) btnText.text = loadedQuizzes[i].quizName;
 
-                // Add Click Listener
-                int index = i; // Local copy for closure
+                int index = i;
                 quizButtons[i].onClick.RemoveAllListeners();
-                quizButtons[i].onClick.AddListener(() => OnQuizSelected(loadedQuizzes[index]));
+                quizButtons[i].onClick.AddListener(() => OnLevelSelected(loadedQuizzes[index]));
             }
             else
             {
-                // Hide unused buttons
                 quizButtons[i].gameObject.SetActive(false);
             }
         }
     }
 
-    void OnQuizSelected(QuizData data)
+    void OnLevelSelected(QuizData data)
     {
-        // Hide Menu
-        menuPanel.SetActive(false);
-
-        // Start Game
+        Hide();
         gameController.gameObject.SetActive(true);
         gameController.StartQuiz(data);
     }

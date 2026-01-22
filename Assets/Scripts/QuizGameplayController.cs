@@ -9,14 +9,26 @@ public class QuizGameplayController : MonoBehaviour
     [Header("Main UI")]
     [SerializeField] private GameObject gameplayPanel;
     [SerializeField] private TextMeshProUGUI questionText;
-    [SerializeField] private Button quitButton; // The "X" in top corner
+
+    [Header("The Universal Button")]
+    public UniversalButton universalButton;
+
+    [Header("Hint UI")]
+    [SerializeField] private Button hintButton;
+    [SerializeField] private GameObject hintPanel;
+    [SerializeField] private TextMeshProUGUI hintTextInPanel;
+    [SerializeField] private Button closeHintButton;
 
     [Header("Result Popup")]
     [SerializeField] private GameObject resultPanel;
     [SerializeField] private TextMeshProUGUI resultTitle;
     [SerializeField] private TextMeshProUGUI resultExplanation;
-    [SerializeField] private Button popupActionButton; // The button on the popup
-    [SerializeField] private TextMeshProUGUI popupBtnText; // The Text INSIDE that button
+    [SerializeField] private Button popupActionButton;
+    [SerializeField] private TextMeshProUGUI popupBtnText;
+
+    [SerializeField] private Image resultImage;
+    [SerializeField] private Sprite correctSprite;
+    [SerializeField] private Sprite incorrectSprite;
 
     [Header("Game Modes")]
     [SerializeField] private GameObject standardPanel;
@@ -32,23 +44,22 @@ public class QuizGameplayController : MonoBehaviour
     [SerializeField] private GameObject hiddenObjectPanel;
 
     [Header("Events")]
-    // Link this to MenuController.ShowMenu() in Inspector!
     public UnityEvent onBackToMenu;
 
-    // State
     private QuizData currentQuiz;
     private int questionIndex;
     private int score;
     private bool lastAnswerWasCorrect;
     private bool isQuizFinished = false;
-
     private List<GameObject> spawnedDraggables = new List<GameObject>();
 
     void Start()
     {
         if (popupActionButton != null) popupActionButton.onClick.AddListener(OnPopupBtnClicked);
         if (dragSubmitButton != null) dragSubmitButton.onClick.AddListener(OnDragSubmit);
-        if (quitButton != null) quitButton.onClick.AddListener(QuitToMenu);
+
+        if (hintButton != null) hintButton.onClick.AddListener(ShowHintPopup);
+        if (closeHintButton != null) closeHintButton.onClick.AddListener(HideHintPopup);
     }
 
     public void StartQuiz(QuizData quizToPlay)
@@ -60,62 +71,73 @@ public class QuizGameplayController : MonoBehaviour
 
         gameplayPanel.SetActive(true);
         resultPanel.SetActive(false);
+        if (hintPanel != null) hintPanel.SetActive(false);
+
+        if (universalButton != null)
+        {
+            universalButton.Configure("МЕНЮ", QuitToMenu);
+        }
 
         LoadQuestion();
     }
 
     public void QuitToMenu()
     {
-        // Cleanup
         ClearAllItems();
         gameplayPanel.SetActive(false);
         resultPanel.SetActive(false);
+        if (hintPanel != null) hintPanel.SetActive(false);
 
-        // Tell MenuController to show up
         onBackToMenu?.Invoke();
     }
 
     void EndQuiz()
     {
         isQuizFinished = true;
-
         HideAllPanels();
-        questionText.gameObject.SetActive(false);
+        if (questionText != null) questionText.gameObject.SetActive(false);
+        if (hintButton != null) hintButton.gameObject.SetActive(false);
 
         resultPanel.SetActive(true);
-        resultTitle.text = "ВІКТОРИНУ ЗАВЕРШЕНО"; // QUIZ COMPLETED
-        resultTitle.color = Color.white;
-        resultExplanation.text = $"Ви завершили вікторину!\n\nФінальний рахунок: {score} / {currentQuiz.questions.Count}";
 
-        // Change button to "Menu"
+        if (resultTitle != null)
+        {
+            resultTitle.gameObject.SetActive(true);
+            resultTitle.text = "";
+            resultTitle.color = Color.white;
+        }
+
+        if (resultImage != null && correctSprite != null)
+        {
+            resultImage.gameObject.SetActive(true);
+            resultImage.sprite = correctSprite;
+        }
+
+        resultExplanation.text = $"Ви завершили вікторину!\n\nФінальний рахунок: {score} / {currentQuiz.questions.Count}";
         if (popupBtnText != null) popupBtnText.text = "В меню";
     }
 
     void OnPopupBtnClicked()
     {
-        if (isQuizFinished)
-        {
-            QuitToMenu();
-        }
+        if (isQuizFinished) QuitToMenu();
         else
         {
-            // Next Question
             resultPanel.SetActive(false);
             if (popupBtnText != null) popupBtnText.text = "Далі";
-
-            if (lastAnswerWasCorrect)
-            {
-                questionIndex++;
-                LoadQuestion();
-            }
-            else
-            {
-                LoadQuestion(); // Retry logic
-            }
+            if (lastAnswerWasCorrect) { questionIndex++; LoadQuestion(); }
+            else { LoadQuestion(); }
         }
     }
 
-    // --- GAMEPLAY LOGIC ---
+    // --- LOGIC ---
+
+    void HideAllPanels()
+    {
+        if (standardPanel) standardPanel.SetActive(false);
+        if (dragDropPanel) dragDropPanel.SetActive(false);
+        if (mapPanel) mapPanel.SetActive(false);
+        if (hiddenObjectPanel) hiddenObjectPanel.SetActive(false);
+    }
 
     void ClearAllItems()
     {
@@ -128,21 +150,13 @@ public class QuizGameplayController : MonoBehaviour
     void LoadQuestion()
     {
         ClearAllItems();
-
-        if (questionIndex >= currentQuiz.questions.Count)
-        {
-            EndQuiz();
-            return;
-        }
+        if (questionIndex >= currentQuiz.questions.Count) { EndQuiz(); return; }
 
         Question q = currentQuiz.questions[questionIndex];
+        if (questionText != null) { questionText.gameObject.SetActive(true); questionText.text = q.questionText; }
 
-        // Reset UI
-        if (questionText != null)
-        {
-            questionText.gameObject.SetActive(true);
-            questionText.text = q.questionText;
-        }
+        if (hintButton != null) hintButton.gameObject.SetActive(!string.IsNullOrEmpty(q.hintText));
+        if (hintPanel != null) hintPanel.SetActive(false);
 
         if (q.type == QuestionType.Standard) SetupStandard(q);
         else if (q.type == QuestionType.DragAndDrop) SetupDragAndDrop(q);
@@ -160,7 +174,6 @@ public class QuizGameplayController : MonoBehaviour
             Button btn = answerButtons[i];
             btn.gameObject.SetActive(true);
             btn.GetComponentInChildren<TextMeshProUGUI>().text = q.options[i].answerText;
-
             AnswerOption opt = q.options[i];
             btn.onClick.RemoveAllListeners();
             btn.onClick.AddListener(() => OnResult(opt.isCorrect, opt.feedbackText));
@@ -183,14 +196,6 @@ public class QuizGameplayController : MonoBehaviour
     void SetupMapSelection() { HideAllPanels(); mapPanel.SetActive(true); }
     void SetupHiddenObject() { HideAllPanels(); hiddenObjectPanel.SetActive(true); }
 
-    void HideAllPanels()
-    {
-        standardPanel.SetActive(false);
-        dragDropPanel.SetActive(false);
-        mapPanel.SetActive(false);
-        hiddenObjectPanel.SetActive(false);
-    }
-
     public void ReportMapResult(bool isCorrect, string text) { OnResult(isCorrect, text); }
 
     void OnResult(bool isCorrect, string text)
@@ -200,20 +205,33 @@ public class QuizGameplayController : MonoBehaviour
 
         if (isCorrect)
         {
-            resultTitle.text = "ПРАВИЛЬНО";
-            resultTitle.color = Color.green;
             score++;
         }
-        else
+
+        if (resultTitle != null)
         {
-            resultTitle.text = "НЕПРАВИЛЬНО";
-            resultTitle.color = Color.red;
+            resultTitle.text = "";
+            resultTitle.gameObject.SetActive(false);
+        }
+
+        if (resultImage != null)
+        {
+            resultImage.gameObject.SetActive(true);
+            if (isCorrect)
+            {
+                if (correctSprite != null) resultImage.sprite = correctSprite;
+            }
+            else
+            {
+                if (incorrectSprite != null) resultImage.sprite = incorrectSprite;
+            }
         }
 
         resultPanel.SetActive(true);
         if (popupBtnText != null) popupBtnText.text = isCorrect ? "Далі" : "Спробувати ще";
     }
 
+    // --- FIX FOR TEDDY BEAR ---
     void OnDragSubmit()
     {
         DraggableItem[] itemsInZone = centerDropZone.GetComponentsInChildren<DraggableItem>();
@@ -222,18 +240,52 @@ public class QuizGameplayController : MonoBehaviour
         int correctItemsFound = 0;
         int totalRequired = 0;
 
+        // 1. Calculate Total Required
+        // We exclude the teddy bear from this count completely.
         foreach (var item in currentQuiz.questions[questionIndex].dragItems)
-            if (item.shouldBeInZone) totalRequired++;
-
-        foreach (var item in itemsInZone)
         {
-            if (item.data.shouldBeInZone) correctItemsFound++;
-            else { isPerfect = false; errorMessages.Add($"{item.data.mistakeFeedback}"); }
+            // If it's a teddy bear, skip it. It's not required.
+            if (item.content.ToLower().Contains("teddy")) continue;
+
+            if (item.shouldBeInZone)
+                totalRequired++;
         }
 
-        if (correctItemsFound < totalRequired) { isPerfect = false; errorMessages.Add("Пропущено елементи."); }
+        // 2. Check items in the bag
+        foreach (var item in itemsInZone)
+        {
+            string itemName = item.data.content.ToLower();
+
+            // If it is the teddy bear, we IGNORE it completely.
+            // It doesn't trigger "Correct found" and it doesn't trigger "Mistake".
+            if (itemName.Contains("teddy"))
+            {
+                continue;
+            }
+
+            if (item.data.shouldBeInZone)
+            {
+                correctItemsFound++;
+            }
+            else
+            {
+                // Real mistake
+                isPerfect = false;
+                errorMessages.Add($"{item.data.mistakeFeedback}");
+            }
+        }
+
+        // 3. Check if we missed any non-teddy required items
+        if (correctItemsFound < totalRequired)
+        {
+            isPerfect = false;
+            errorMessages.Add("Пропущено необхідні елементи.");
+        }
 
         string finalFeedback = isPerfect ? "Чудово!" : "Помилки:\n" + string.Join("\n", errorMessages);
         OnResult(isPerfect, finalFeedback);
     }
+
+    void ShowHintPopup() { if (hintPanel != null && hintTextInPanel != null) { hintTextInPanel.text = currentQuiz.questions[questionIndex].hintText; hintPanel.SetActive(true); } }
+    void HideHintPopup() { if (hintPanel != null) hintPanel.SetActive(false); }
 }
