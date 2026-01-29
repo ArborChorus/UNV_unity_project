@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using TMPro;
 using UnityEngine.Events;
 using System.Collections.Generic;
+using System.Linq; // Added for convenient list handling
 
 public class QuizGameplayController : MonoBehaviour
 {
@@ -30,6 +31,13 @@ public class QuizGameplayController : MonoBehaviour
     [SerializeField] private Sprite correctSprite;
     [SerializeField] private Sprite incorrectSprite;
 
+    // --- NEW: GRAND FINALE UI ---
+    [Header("Grand Finale (All 3 Quizzes Done)")]
+    [SerializeField] private GameObject finalCongratsPanel;
+    [SerializeField] private Button finalMenuButton;
+    [SerializeField] private Button resetProgressButton; // Optional: for testing/resetting
+    // ----------------------------
+
     [Header("Game Modes")]
     [SerializeField] private GameObject standardPanel;
     [SerializeField] private Button[] answerButtons;
@@ -53,6 +61,9 @@ public class QuizGameplayController : MonoBehaviour
     private bool isQuizFinished = false;
     private List<GameObject> spawnedDraggables = new List<GameObject>();
 
+    private const string PREFS_COMPLETED_KEY = "CompletedQuizzes";
+    private const int TOTAL_QUIZZES_TO_WIN = 3;
+
     void Start()
     {
         if (popupActionButton != null) popupActionButton.onClick.AddListener(OnPopupBtnClicked);
@@ -60,6 +71,10 @@ public class QuizGameplayController : MonoBehaviour
 
         if (hintButton != null) hintButton.onClick.AddListener(ShowHintPopup);
         if (closeHintButton != null) closeHintButton.onClick.AddListener(HideHintPopup);
+
+        // --- NEW LISTENERS ---
+        if (finalMenuButton != null) finalMenuButton.onClick.AddListener(QuitToMenu);
+        if (resetProgressButton != null) resetProgressButton.onClick.AddListener(ResetProgress);
     }
 
     public void StartQuiz(QuizData quizToPlay)
@@ -72,6 +87,7 @@ public class QuizGameplayController : MonoBehaviour
         gameplayPanel.SetActive(true);
         resultPanel.SetActive(false);
         if (hintPanel != null) hintPanel.SetActive(false);
+        if (finalCongratsPanel != null) finalCongratsPanel.SetActive(false);
 
         if (universalButton != null)
         {
@@ -87,6 +103,7 @@ public class QuizGameplayController : MonoBehaviour
         gameplayPanel.SetActive(false);
         resultPanel.SetActive(false);
         if (hintPanel != null) hintPanel.SetActive(false);
+        if (finalCongratsPanel != null) finalCongratsPanel.SetActive(false);
 
         onBackToMenu?.Invoke();
     }
@@ -98,6 +115,36 @@ public class QuizGameplayController : MonoBehaviour
         if (questionText != null) questionText.gameObject.SetActive(false);
         if (hintButton != null) hintButton.gameObject.SetActive(false);
 
+        // 1. Mark this specific quiz as complete in Save Data
+        SaveQuizCompletion(currentQuiz.quizName);
+
+        // 2. Check how many unique quizzes are finished
+        int finishedCount = GetCompletedQuizCount();
+
+        // 3. Logic: If 3 or more are done, show Final Panel. Otherwise, show normal Result.
+        if (finishedCount >= TOTAL_QUIZZES_TO_WIN)
+        {
+            // --- SHOW GRAND FINALE ---
+            if (finalCongratsPanel != null)
+            {
+                finalCongratsPanel.SetActive(true);
+                // We do NOT show the normal result panel here
+            }
+            else
+            {
+                // Fallback if panel isn't assigned
+                ShowStandardEndScreen();
+            }
+        }
+        else
+        {
+            // --- SHOW STANDARD END SCREEN ---
+            ShowStandardEndScreen();
+        }
+    }
+
+    void ShowStandardEndScreen()
+    {
         resultPanel.SetActive(true);
 
         if (resultTitle != null)
@@ -116,6 +163,41 @@ public class QuizGameplayController : MonoBehaviour
         resultExplanation.text = $"Ви завершили вікторину!\n\nФінальний рахунок: {score} / {currentQuiz.questions.Count}";
         if (popupBtnText != null) popupBtnText.text = "В меню";
     }
+
+    // --- PROGRESS LOGIC ---
+
+    void SaveQuizCompletion(string quizName)
+    {
+        // Get existing string (Format: "Quiz1|Quiz2|")
+        string existing = PlayerPrefs.GetString(PREFS_COMPLETED_KEY, "");
+
+        // If this quiz isn't already in the list, add it
+        if (!existing.Contains(quizName + "|"))
+        {
+            existing += quizName + "|";
+            PlayerPrefs.SetString(PREFS_COMPLETED_KEY, existing);
+            PlayerPrefs.Save();
+            Debug.Log($"Saved progress. Completed: {existing}");
+        }
+    }
+
+    int GetCompletedQuizCount()
+    {
+        string existing = PlayerPrefs.GetString(PREFS_COMPLETED_KEY, "");
+        // Split by '|' and remove empty entries to get count
+        string[] quizzes = existing.Split(new char[] { '|' }, System.StringSplitOptions.RemoveEmptyEntries);
+        return quizzes.Length;
+    }
+
+    public void ResetProgress()
+    {
+        PlayerPrefs.DeleteKey(PREFS_COMPLETED_KEY);
+        PlayerPrefs.Save();
+        Debug.Log("Progress Reset!");
+        QuitToMenu();
+    }
+
+    // ----------------------
 
     void OnPopupBtnClicked()
     {
@@ -231,7 +313,6 @@ public class QuizGameplayController : MonoBehaviour
         if (popupBtnText != null) popupBtnText.text = isCorrect ? "Далі" : "Спробувати ще";
     }
 
-    // --- FIX FOR TEDDY BEAR ---
     void OnDragSubmit()
     {
         DraggableItem[] itemsInZone = centerDropZone.GetComponentsInChildren<DraggableItem>();
@@ -240,42 +321,25 @@ public class QuizGameplayController : MonoBehaviour
         int correctItemsFound = 0;
         int totalRequired = 0;
 
-        // 1. Calculate Total Required
-        // We exclude the teddy bear from this count completely.
         foreach (var item in currentQuiz.questions[questionIndex].dragItems)
         {
-            // If it's a teddy bear, skip it. It's not required.
             if (item.content.ToLower().Contains("teddy")) continue;
-
-            if (item.shouldBeInZone)
-                totalRequired++;
+            if (item.shouldBeInZone) totalRequired++;
         }
 
-        // 2. Check items in the bag
         foreach (var item in itemsInZone)
         {
             string itemName = item.data.content.ToLower();
+            if (itemName.Contains("teddy")) continue;
 
-            // If it is the teddy bear, we IGNORE it completely.
-            // It doesn't trigger "Correct found" and it doesn't trigger "Mistake".
-            if (itemName.Contains("teddy"))
-            {
-                continue;
-            }
-
-            if (item.data.shouldBeInZone)
-            {
-                correctItemsFound++;
-            }
+            if (item.data.shouldBeInZone) correctItemsFound++;
             else
             {
-                // Real mistake
                 isPerfect = false;
                 errorMessages.Add($"{item.data.mistakeFeedback}");
             }
         }
 
-        // 3. Check if we missed any non-teddy required items
         if (correctItemsFound < totalRequired)
         {
             isPerfect = false;
